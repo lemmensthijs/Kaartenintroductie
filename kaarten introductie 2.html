@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magische Workshop Kaarten</title>
+    <style>
+        :root {
+            --bg-dark: #050508;
+            --purple-card-start: #240046; /* Iets donkerder voor meer contrast */
+            --purple-card-end: #7b2cbf;   /* Iets feller paars */
+            --text-color: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-dark);
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* Voorkomt scrollen en bouncen op mobiel */
+            position: fixed; 
+        }
+
+        /* Subtiele bewegende wolkige achtergrond */
+        .background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #020205 100%);
+            z-index: -1;
+        }
+
+        .clouds {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(89, 12, 168, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(67, 12, 163, 0.15) 0%, transparent 50%);
+            animation: drift 30s ease-in-out infinite alternate;
+            z-index: -1;
+            opacity: 0.7;
+        }
+
+        @keyframes drift {
+            from { transform: translate(-5%, -5%) rotate(0deg); }
+            to { transform: translate(5%, 5%) rotate(2deg); }
+        }
+
+        /* --- RESPONSIVE KAART CONTAINER --- */
+        .card-container {
+            /* Mobiel first benadering: */
+            width: 85vw; /* 85% van de breedte van het scherm */
+            height: 65vh; /* 65% van de hoogte van het scherm */
+            
+            /* Beperkingen voor grotere schermen: */
+            max-width: 450px; 
+            max-height: 650px;
+            min-height: 300px; /* Niet te klein worden */
+
+            perspective: 1000px;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+
+            /* Voorkom selecteren van tekst bij snel tikken */
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.4);
+            border-radius: 25px;
+        }
+
+        .card-container.is-flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-sizing: border-box;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+        }
+
+        /* Voorkant: Diep paars met MAGISCHE sterren */
+        .card-front {
+            background: linear-gradient(135deg, var(--purple-card-start), var(--purple-card-end));
+            color: white;
+            overflow: hidden;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* --- DE NIEUWE MAGISCHE STERREN --- */
+        .star {
+            position: absolute;
+            background: #fff;
+            /* Een zachte rand voor de ster */
+            background: radial-gradient(circle, #ffffff 30%, transparent 70%);
+            border-radius: 50%;
+            /* Glow effect */
+            box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.7);
+            opacity: 0;
+            animation-name: twinkle;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+            animation-timing-function: ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0% { 
+                opacity: 0.2; 
+                transform: scale(0.5) rotate(0deg); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1.4) rotate(180deg); 
+                /* De glow wordt intenser als hij groter is */
+                box-shadow: 0 0 10px 4px rgba(255, 255, 255, 0.9);
+            }
+        }
+
+        /* Achterkant: De vraag */
+        .card-back {
+            background: #ffffff;
+            color: #240046;
+            transform: rotateY(180deg);
+            font-size: 1.4rem; /* Basis grootte voor mobiel */
+            line-height: 1.6;
+            font-weight: 600;
+            padding: 40px;
+        }
+
+        /* Media Query voor grotere schermen (tablets en desktops) */
+        @media (min-width: 768px) {
+            .card-back { font-size: 1.8rem; }
+            .card-front { font-size: 2rem; }
+        }
+
+        .instruction {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            color: var(--text-color);
+            text-align: center;
+            width: 100%;
+            pointer-events: none; /* Zodat je er doorheen kunt klikken */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-overlay"></div>
+    <div class="clouds"></div>
+
+    <div class="card-container" id="card">
+        <div class="card-inner">
+            <div class="card-front" id="stars-container">
+                <div style="z-index: 2; position: relative;">Tik om te beginnen</div>
+            </div>
+            <div class="card-back">
+                <p id="question-text">Laden...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="instruction">Tik op de kaart om te draaien</div>
+
+    <script>
+        // Een selectie van de vragen (vul gerust aan met de volledige lijst!)
+        const questions = [
+            "Aan welke leeftijd heb je de mooiste herinneringen?",
+            "Als je de hele dag één gerecht moest eten, wat zou dat dan zijn?",
+            "Als je door de tijd kon reizen, naar welke tijd zou je dan willen?",
+            "Als je een eigen bedrijf zou starten, wat zou je dan verkopen?",
+            "Als je een glazen bol had, wat zou je daar graag in willen zien?",
+            "Als je een superheld was, wie zou je dan zijn?",
+            "Als je onsterfelijk zou zijn voor 1 dag, wat zou je dan doen?",
+            "Ben je een dromer, denker of doener?",
+            "Bij welke film moest jij voor het laatst huilen?",
+            "Bij wie kan je echt jezelf zijn?",
+            "Bij wie voel jij je veilig?",
+            "Door wie ben jij afgelopen tijd positief verrast?",
+            "Durf jij je dromen te volgen?",
+            "Heb je afgelopen week iets nieuws geleerd?",
+            "Heb je vandaag een complimentje gegeven?",
+            "Hoe ziet de wereld er uit over 10 jaar?",
+            "Hoe ziet jouw ideale zondag eruit?",
+            "Hoe zou een vriend(in) jou omschrijven?",
+            "In welk boek zou jij de hoofdpersoon willen zijn?",
+            "Met welk woord zou je jezelf omschrijven?",
+            "Met welke 5 foto’s zou je jouw leven omschrijven?",
+            "Met wie heb jij de grootste lol?",
+            "Op welke onbeantwoorde vraag wil je graag antwoord?",
+            "Van welke kleine dingen word jij gelukkig?",
+            "Waar ben je het meest dankbaar voor?",
+            "Waar droom je vaak over?",
+            "Waar krijg jij de meeste energie van?",
+            "Waarom is het fijn om jou als vriend(in) te hebben?",
+            "Wanneer heb je voor het laatst gehuild van het lachen?",
+            "Wanneer komt het kind in jezelf weer boven?",
+            "Wat is je favoriete quote?",
+            "Wat is de beste les die je hebt geleerd door het maken van een fout?",
+            "Wat is de mooiste herinnering uit jouw kindertijd?",
+            "Wat is het gekste dat je ooit hebt gedaan?",
+            "Wat is het mooiste compliment dat jij hebt ontvangen?",
+            "Wat is iets dat nog niemand over jou weet?",
+            "Wat is jouw grootste wens?",
+            "Wat is jouw talent?",
+            "Wat zou je doen als je wist dat je niet kon falen?",
+            "Welk dier geeft jouw karakter het beste weer?",
+            "Welke eigenschap vind jij het belangrijkst bij een vriend(in)?",
+            "Welke superkracht zou je het liefst willen hebben?",
+            "Wie inspireert jou om een beter mens te zijn?",
+            "Zou je liever gedachten kunnen lezen of onzichtbaar willen zijn?"
+        ];
+
+        const card = document.getElementById('card');
+        const questionText = document.getElementById('question-text');
+        const starsContainer = document.getElementById('stars-container');
+
+        let isFlipped = false;
+
+        // --- MAGISCHE STERREN GENERATOR ---
+        // We maken nu 100 sterren voor meer effect
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            
+            // Varieer de grootte van de sterren
+            const size = Math.random() * 4 + 2 + 'px'; // Tussen 2px en 6px
+            star.style.width = size;
+            star.style.height = size;
+            
+            star.style.top = Math.random() * 100 + '%';
+            star.style.left = Math.random() * 100 + '%';
+            
+            // Willekeurige duur en vertraging voor een natuurlijk, chaotisch effect
+            const duration = Math.random() * 3 + 1.5 + 's'; // Tussen 1.5s en 4.5s
+            const delay = Math.random() * 3 + 's';
+            
+            star.style.animationDuration = duration;
+            star.style.animationDelay = delay;
+            
+            starsContainer.appendChild(star);
+        }
+
+        function getRandomQuestion() {
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            return questions[randomIndex];
+        }
+
+        card.addEventListener('click', () => {
+            if (!isFlipped) {
+                // Draai om naar vraag (eerst de tekst updaten)
+                questionText.innerText = getRandomQuestion();
+                card.classList.add('is-flipped');
+                isFlipped = true;
+            } else {
+                // Draai terug naar de magische sterren
+                card.classList.remove('is-flipped');
+                isFlipped = false;
+            }
+        });
+    </script>
+</body>
+</html>
