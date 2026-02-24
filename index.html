@@ -1,293 +1,935 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Magische Workshop Kaarten</title>
-    <style>
-        :root {
-            --bg-dark: #050508;
-            --purple-card-start: #240046; /* Iets donkerder voor meer contrast */
-            --purple-card-end: #7b2cbf;   /* Iets feller paars */
-            --text-color: #ffffff;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pickwick Vragen ✦</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: var(--bg-dark);
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* Voorkomt scrollen en bouncen op mobiel */
-            position: fixed; 
-        }
+    body {
+      background: #07070f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
 
-        /* Subtiele bewegende wolkige achtergrond */
-        .background-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #020205 100%);
-            z-index: -1;
-        }
+    /* ── Achtergrond sterren ─────────────────────── */
+    #bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-        .clouds {
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 30%, rgba(89, 12, 168, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 80%, rgba(67, 12, 163, 0.15) 0%, transparent 50%);
-            animation: drift 30s ease-in-out infinite alternate;
-            z-index: -1;
-            opacity: 0.7;
-        }
+    .bs {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: blink var(--d) ease-in-out infinite var(--dl);
+    }
 
-        @keyframes drift {
-            from { transform: translate(-5%, -5%) rotate(0deg); }
-            to { transform: translate(5%, 5%) rotate(2deg); }
-        }
+    @keyframes blink {
+      0%,100% { opacity: .04; }
+      50%      { opacity: .55; }
+    }
 
-        /* --- RESPONSIVE KAART CONTAINER --- */
-        .card-container {
-            /* Mobiel first benadering: */
-            width: 85vw; /* 85% van de breedte van het scherm */
-            height: 65vh; /* 65% van de hoogte van het scherm */
-            
-            /* Beperkingen voor grotere schermen: */
-            max-width: 450px; 
-            max-height: 650px;
-            min-height: 300px; /* Niet te klein worden */
+    /* ── Kaart ───────────────────────────────────── */
+    .scene {
+      perspective: 1400px;
+      cursor: pointer;
+      z-index: 1;
+      -webkit-tap-highlight-color: transparent;
+      filter: drop-shadow(0 0 30px rgba(130,0,210,.45));
+      transition: filter .4s;
+    }
 
-            perspective: 1000px;
-            cursor: pointer;
-            position: relative;
-            z-index: 10;
+    .scene:hover {
+      filter: drop-shadow(0 0 50px rgba(180,0,255,.6));
+    }
 
-            /* Voorkom selecteren van tekst bij snel tikken */
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
+    .card {
+      --w: min(390px, 85vw, 52vh);
+      width: var(--w);
+      height: calc(var(--w) * 1.52);
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform .9s cubic-bezier(.4,0,.2,1);
+    }
 
-        .card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            text-align: center;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.4);
-            border-radius: 25px;
-        }
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
 
-        .card-container.is-flipped .card-inner {
-            transform: rotateY(180deg);
-        }
+    .face {
+      position: absolute;
+      inset: 0;
+      border-radius: 22px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+    }
 
-        .card-front, .card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 25px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 30px;
-            box-sizing: border-box;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-        }
+    /* ── ACHTERKANT (paars met sterren) ─────────── */
+    .back {
+      background: radial-gradient(ellipse at 28% 18%, #420080 0%, #250055 35%, #160035 65%, #0d001c 100%);
+    }
 
-        /* Voorkant: Diep paars met MAGISCHE sterren */
-        .card-front {
-            background: linear-gradient(135deg, var(--purple-card-start), var(--purple-card-end));
-            color: white;
-            overflow: hidden;
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
+    .back::after {
+      content: '';
+      position: absolute;
+      inset: 13px;
+      border: 1px solid rgba(210,150,255,.14);
+      border-radius: 14px;
+      pointer-events: none;
+    }
 
-        /* --- DE NIEUWE MAGISCHE STERREN --- */
-        .star {
-            position: absolute;
-            background: #fff;
-            /* Een zachte rand voor de ster */
-            background: radial-gradient(circle, #ffffff 30%, transparent 70%);
-            border-radius: 50%;
-            /* Glow effect */
-            box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.7);
-            opacity: 0;
-            animation-name: twinkle;
-            animation-iteration-count: infinite;
-            animation-direction: alternate;
-            animation-timing-function: ease-in-out;
-        }
+    #card-stars { position: absolute; inset: 0; }
 
-        @keyframes twinkle {
-            0% { 
-                opacity: 0.2; 
-                transform: scale(0.5) rotate(0deg); 
-            }
-            100% { 
-                opacity: 1; 
-                transform: scale(1.4) rotate(180deg); 
-                /* De glow wordt intenser als hij groter is */
-                box-shadow: 0 0 10px 4px rgba(255, 255, 255, 0.9);
-            }
-        }
+    .cs {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--d) ease-in-out infinite var(--dl);
+    }
 
-        /* Achterkant: De vraag */
-        .card-back {
-            background: #ffffff;
-            color: #240046;
-            transform: rotateY(180deg);
-            font-size: 1.4rem; /* Basis grootte voor mobiel */
-            line-height: 1.6;
-            font-weight: 600;
-            padding: 40px;
-        }
+    .sp {
+      position: absolute;
+      color: #fff;
+      line-height: 1;
+      animation: sparkle var(--d) ease-in-out infinite var(--dl);
+    }
 
-        /* Media Query voor grotere schermen (tablets en desktops) */
-        @media (min-width: 768px) {
-            .card-back { font-size: 1.8rem; }
-            .card-front { font-size: 2rem; }
-        }
+    @keyframes twinkle {
+      0%,100% { opacity: .12; transform: scale(.65); }
+      50%      { opacity: 1;   transform: scale(1.35); }
+    }
 
-        .instruction {
-            position: absolute;
-            bottom: 20px;
-            font-size: 0.9rem;
-            opacity: 0.7;
-            color: var(--text-color);
-            text-align: center;
-            width: 100%;
-            pointer-events: none; /* Zodat je er doorheen kunt klikken */
-        }
-    </style>
+    @keyframes sparkle {
+      0%,100% { opacity: 0;  transform: scale(0) rotate(0deg); }
+      40%,60% { opacity: .9; transform: scale(1) rotate(22deg); }
+    }
+
+    .back-logo {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .back-logo .big-star {
+      font-size: clamp(2rem, 7vw, 3rem);
+      color: rgba(240,210,255,.35);
+      animation: pulseStar 3s ease-in-out infinite;
+    }
+
+    @keyframes pulseStar {
+      0%,100% { opacity: .25; transform: scale(.95); }
+      50%      { opacity: .5;  transform: scale(1.05); }
+    }
+
+    /* ── VOORKANT (vraag) ────────────────────────── */
+    .front {
+      background: radial-gradient(ellipse at 65% 75%, #300065 0%, #1d0045 40%, #120030 80%, #09001e 100%);
+      transform: rotateY(180deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 38px;
+    }
+
+    .front::before {
+      content: '';
+      position: absolute;
+      inset: 15px;
+      border: 1px solid rgba(205,145,255,.22);
+      border-radius: 12px;
+      pointer-events: none;
+    }
+
+    .corner {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: rgba(205,145,255,.5);
+      border-style: solid;
+    }
+    .tl { top:19px;    left:19px;  border-width:2px 0 0 2px; }
+    .tr { top:19px;    right:19px; border-width:2px 2px 0 0; }
+    .bl { bottom:19px; left:19px;  border-width:0 0 2px 2px; }
+    .br { bottom:19px; right:19px; border-width:0 2px 2px 0; }
+
+    #question {
+      color: #ead6ff;
+      font-size: clamp(1.05rem, 3vw, 1.55rem);
+      font-style: italic;
+      font-weight: 400;
+      text-align: center;
+      line-height: 1.7;
+      text-shadow: 0 0 28px rgba(210,140,255,.65);
+      letter-spacing: .025em;
+    }
+
+    /* ── Hint ────────────────────────────────────── */
+    #hint {
+      position: fixed;
+      bottom: clamp(14px, 4vh, 34px);
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(200,155,255,.32);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(.78rem, 1.8vw, .92rem);
+      letter-spacing: .13em;
+      z-index: 10;
+      white-space: nowrap;
+      pointer-events: none;
+      transition: opacity .6s;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="background-overlay"></div>
-    <div class="clouds"></div>
+<div id="bg"></div>
 
-    <div class="card-container" id="card">
-        <div class="card-inner">
-            <div class="card-front" id="stars-container">
-                <div style="z-index: 2; position: relative;">Tik om te beginnen</div>
-            </div>
-            <div class="card-back">
-                <p id="question-text">Laden...</p>
-            </div>
-        </div>
+<div class="scene" id="scene">
+  <div class="card" id="card">
+
+    <!-- Achterkant -->
+    <div class="face back">
+      <div id="card-stars"></div>
+      <div class="back-logo">
+        <span class="big-star">✦</span>
+      </div>
     </div>
 
-    <div class="instruction">Tik op de kaart om te draaien</div>
+    <!-- Voorkant -->
+    <div class="face front">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <p id="question"></p>
+    </div>
 
-    <script>
-        // Een selectie van de vragen (vul gerust aan met de volledige lijst!)
-        const questions = [
-            "Aan welke leeftijd heb je de mooiste herinneringen?",
-            "Als je de hele dag één gerecht moest eten, wat zou dat dan zijn?",
-            "Als je door de tijd kon reizen, naar welke tijd zou je dan willen?",
-            "Als je een eigen bedrijf zou starten, wat zou je dan verkopen?",
-            "Als je een glazen bol had, wat zou je daar graag in willen zien?",
-            "Als je een superheld was, wie zou je dan zijn?",
-            "Als je onsterfelijk zou zijn voor 1 dag, wat zou je dan doen?",
-            "Ben je een dromer, denker of doener?",
-            "Bij welke film moest jij voor het laatst huilen?",
-            "Bij wie kan je echt jezelf zijn?",
-            "Bij wie voel jij je veilig?",
-            "Door wie ben jij afgelopen tijd positief verrast?",
-            "Durf jij je dromen te volgen?",
-            "Heb je afgelopen week iets nieuws geleerd?",
-            "Heb je vandaag een complimentje gegeven?",
-            "Hoe ziet de wereld er uit over 10 jaar?",
-            "Hoe ziet jouw ideale zondag eruit?",
-            "Hoe zou een vriend(in) jou omschrijven?",
-            "In welk boek zou jij de hoofdpersoon willen zijn?",
-            "Met welk woord zou je jezelf omschrijven?",
-            "Met welke 5 foto’s zou je jouw leven omschrijven?",
-            "Met wie heb jij de grootste lol?",
-            "Op welke onbeantwoorde vraag wil je graag antwoord?",
-            "Van welke kleine dingen word jij gelukkig?",
-            "Waar ben je het meest dankbaar voor?",
-            "Waar droom je vaak over?",
-            "Waar krijg jij de meeste energie van?",
-            "Waarom is het fijn om jou als vriend(in) te hebben?",
-            "Wanneer heb je voor het laatst gehuild van het lachen?",
-            "Wanneer komt het kind in jezelf weer boven?",
-            "Wat is je favoriete quote?",
-            "Wat is de beste les die je hebt geleerd door het maken van een fout?",
-            "Wat is de mooiste herinnering uit jouw kindertijd?",
-            "Wat is het gekste dat je ooit hebt gedaan?",
-            "Wat is het mooiste compliment dat jij hebt ontvangen?",
-            "Wat is iets dat nog niemand over jou weet?",
-            "Wat is jouw grootste wens?",
-            "Wat is jouw talent?",
-            "Wat zou je doen als je wist dat je niet kon falen?",
-            "Welk dier geeft jouw karakter het beste weer?",
-            "Welke eigenschap vind jij het belangrijkst bij een vriend(in)?",
-            "Welke superkracht zou je het liefst willen hebben?",
-            "Wie inspireert jou om een beter mens te zijn?",
-            "Zou je liever gedachten kunnen lezen of onzichtbaar willen zijn?"
-        ];
+  </div>
+</div>
 
-        const card = document.getElementById('card');
-        const questionText = document.getElementById('question-text');
-        const starsContainer = document.getElementById('stars-container');
+<p id="hint">Klik op de kaart om een vraag te onthullen</p>
 
-        let isFlipped = false;
+<script>
+/* ── Alle Pickwick-vragen ─────────────────────────────────────────── */
+const QUESTIONS = [
+  "Aan welke leeftijd heb je de mooiste herinneringen?",
+  "Aan welk huishoudelijk klusje heb jij een grote hekel?",
+  "Aan welke spelshow zou je willen meedoen?",
+  "Aan welke sport op de olympische spelen zou je mee willen doen?",
+  "Aan welke sportwedstrijd wil jij een keer meedoen?",
+  "Aan welke verjaardag heb je de leukste herinnering?",
+  "Aan wie moest je vanochtend als eerste denken?",
+  "Als je alle tijd van de wereld had, wat zou je dan doen?",
+  "Als je de hele dag één gerecht moest eten, wat zou dat dan zijn?",
+  "Als je deze week opnieuw kon doen, wat zou je anders doen?",
+  "Als je door de tijd kon reizen, naar welke tijd zou je dan willen?",
+  "Als je één ding uit je verleden kon aanpassen, wat zou het dan zijn?",
+  "Als je één outfit moest kiezen voor de rest van je leven, wat zou dit zijn?",
+  "Als je een eigen bedrijf zou starten, wat zou je dan verkopen?",
+  "Als je een glazen bol had, wat zou je daar graag in willen zien?",
+  "Als je een superheld was, wie zou je dan zijn?",
+  "Als je iemand anders kon zijn, wie zou je dan willen zijn?",
+  "Als je iets tegen de wereld zou kunnen zeggen, wat zou het zijn?",
+  "Als je nog maar één serie zou mogen kijken, welke zou je kiezen?",
+  "Als je onsterfelijk zou zijn voor één dag, wat zou je dan doen?",
+  "Als je terug in de tijd kon gaan, wat zou je dan doen?",
+  "Als jij je eigen naam kon kiezen, hoe zou je dan heten?",
+  "Als welk dier zou je willen reïncarneren?",
+  "Ben je bijgelovig?",
+  "Ben je een dromer, denker of doener?",
+  "Ben je een pessimist of optimist?",
+  "Ben je gelukkig?",
+  "Ben je liever lang en dik, of klein en atletisch?",
+  "Ben je liever populair of ben je liever slim?",
+  "Ben je meer een planner of word je liever verrast?",
+  "Ben je ooit naar de eerste hulp geweest?",
+  "Ben jij een buiten- of een binnenmens?",
+  "Ben jij een ochtend- of een avondmens?",
+  "Bij het spelen van welk spel verlies jij altijd?",
+  "Bij welke film moest jij voor het laatst huilen?",
+  "Bij welk gebouw zou je wel eens binnen willen kijken?",
+  "Bij welk liedje kun je niet stil blijven zitten?",
+  "Bij wie kan je echt jezelf zijn?",
+  "Bij wie kan jij terecht voor goede raad?",
+  "Bij wie kun jij je hart luchten?",
+  "Bij wie vind je rust?",
+  "Bij wie voel jij je het meest op je gemak?",
+  "Bij wie voel jij je veilig?",
+  "Denk je dat er op een dag buitenaardse wezens landen?",
+  "Doe je wel eens wat aardigs voor een vreemde?",
+  "Door wie ben jij afgelopen tijd positief verrast?",
+  "Durf jij je dromen te volgen?",
+  "Ga je liever naar de zon of naar de sneeuw?",
+  "Geef jij onbekenden wel eens een helpende hand?",
+  "Geloof je in liefde op het eerste gezicht?",
+  "Geloof je in ware liefde?",
+  "Geloof jij in toeval?",
+  "Heb je afgelopen week iets nieuws geleerd?",
+  "Heb je een stopwoord?",
+  "Heb je iemand ontmoet dit jaar die jouw leven heeft veranderd?",
+  "Heb je liever een jaar geen tv of een jaar geen snacks?",
+  "Heb je liever je grootste vraag beantwoord of je grootste wens vervuld?",
+  "Heb je ooit iets gedaan waarmee je in de problemen kwam?",
+  "Heb je vandaag een complimentje gegeven?",
+  "Heb je vandaag een complimentje gekregen?",
+  "Hoe belangrijk is geld voor jou?",
+  "Hoe belangrijk is social media voor je?",
+  "Hoe ben je de afgelopen vijf jaar veranderd?",
+  "Hoe ben je veranderd in het afgelopen jaar?",
+  "Hoe deel je het liefst je dag in?",
+  "Hoe denk je dat anderen jou zien als ze je voor het eerst ontmoeten?",
+  "Hoe denk je dat een schrijver jou zou beschrijven in een roman?",
+  "Hoe ga je er vandaag een goede dag van maken?",
+  "Hoe heb jij je eerste liefde leren kennen?",
+  "Hoe kan iemand jou op je gemak laten voelen?",
+  "Hoe kijk je terug op je leven tot nu toe?",
+  "Hoe kom jij tot rust?",
+  "Hoe laad jij jezelf op?",
+  "Hoe laat je blijken dat je van iemand houdt?",
+  "Hoe lang ben je ooit achter elkaar wakker geweest?",
+  "Hoe sluit jij jouw dag het liefste af?",
+  "Hoe sta jij bij je vrienden bekend?",
+  "Hoe start je 's morgens op?",
+  "Hoe vaak druk jij op snooze voordat je uit bed gaat?",
+  "Hoe vier jij het liefst je verjaardag?",
+  "Hoe vier jij successen?",
+  "Hoe voel je je vandaag?",
+  "Hoe zet jij een ander in het zonnetje?",
+  "Hoe zorg jij voor jezelf?",
+  "Hoe ziet de wereld er uit over 10 jaar?",
+  "Hoe ziet een romantische date er volgens jou uit?",
+  "Hoe ziet je ideale vrije dag eruit?",
+  "Hoe ziet jouw droomhuis eruit?",
+  "Hoe ziet jouw droomvakantie eruit?",
+  "Hoe ziet jouw ideale vakantie eruit?",
+  "Hoe ziet jouw ideale zondag eruit?",
+  "Hoe ziet jouw kledingkast eruit?",
+  "Hoe ziet jouw ochtendritueel eruit?",
+  "Hoe ziet jouw perfecte dag eruit?",
+  "Hoe ziet jouw perfecte date eruit?",
+  "Hoe ziet jouw perfecte vrijdagavond eruit?",
+  "Hoe ziet jouw perfecte zaterdag eruit?",
+  "Hoe zou een vriend(in) jou omschrijven?",
+  "Hoe zou je dag eruit zien als je miljonair was?",
+  "Hoeveel paar schoenen heb je?",
+  "Hoeveel tijd breng jij door met jouw familie?",
+  "Hoeveel uur per dag besteed jij aan social media?",
+  "Hou je meer van honden of van katten?",
+  "Houd je meer van zoet of van hartig?",
+  "In welk boek zou jij de hoofdpersoon willen zijn?",
+  "In welk genre zou jij een liedje schrijven?",
+  "In welk land zou je het liefst willen wonen?",
+  "In welk tijdperk had jij wel willen leven?",
+  "In welk tv-programma zou jij te zien willen zijn?",
+  "In welke serie zou je wel een rol willen spelen?",
+  "In welke sport zou jij een olympisch atleet willen zijn?",
+  "Kies je voor een stedentrip of strandvakantie?",
+  "Kies je voor uitgebreid ontbijten of uitgebreid dineren?",
+  "Kijk je liever naar de zonsopgang of zonsondergang?",
+  "Kook je liever zelf of bestel je liever eten?",
+  "Kun je een nieuwe theesmaak bedenken?",
+  "Kun je goed alleen zijn?",
+  "Liever één jaar vooruit of één jaar terug?",
+  "Liever een hele dag overal ja of nee op moeten zeggen?",
+  "Lukt het jou om een dag je telefoon uit te zetten?",
+  "Maak je liever een bos- of een strandwandeling?",
+  "Maakt geld gelukkig?",
+  "Met welk beroemd persoon zou jij een dag willen ruilen?",
+  "Met welk familielid deel je de mooiste jeugdherinneringen?",
+  "Met welk familielid zou je een dag willen ruilen?",
+  "Met welk idee moet je nog steeds iets doen?",
+  "Met welk woord zou je jezelf omschrijven?",
+  "Met welke beroemdheid zou je een dagje uit willen?",
+  "Met welke beroemdheid zou jij een kopje thee willen drinken?",
+  "Met welke oude bekende zou je graag weer eens afspreken?",
+  "Met welke theesmaak zou je jezelf omschrijven?",
+  "Met wie ben jij de laatste tijd steeds hechter geworden?",
+  "Met wie heb je al lang niet meer bijgepraat?",
+  "Met wie heb je het vaakst de slappe lach?",
+  "Met wie heb jij de grootste lol?",
+  "Met wie moet je snel weer eens afspreken?",
+  "Met wie vier je het liefst je verjaardag?",
+  "Met wie wil je snel een kopje thee drinken?",
+  "Met wie zou je een dag willen ruilen?",
+  "Met wie zou je een wereldreis willen maken?",
+  "Met wie zou je graag een keer op vakantie gaan?",
+  "Met wie zou je het liefst dit kopje thee drinken?",
+  "Met wie zou jij graag 24 uur willen doorbrengen?",
+  "Met wie zou jij voor één dag willen ruilen?",
+  "Naar welk doel werk je op dit moment toe?",
+  "Naar welke dag in de geschiedenis zou je terug willen?",
+  "Naar welke feestdag kijk je het meeste uit?",
+  "Naast wie zou jij het liefst willen wonen?",
+  "Noem één raar ding aan jezelf.",
+  "Om wie moest jij het hardst lachen?",
+  "Op welke manier rust jij het best uit?",
+  "Op welke onbeantwoorde vraag wil je graag antwoord?",
+  "Op welk familielid zou je het liefst willen lijken?",
+  "Op welk moment is thee voor jou onmisbaar?",
+  "Op welk moment van de dag drink jij het liefst thee?",
+  "Op wie kun jij altijd rekenen?",
+  "Op wie was je voor het laatst trots?",
+  "Tegen wie kijk je op?",
+  "Tot welke leeftijd sliep je met een knuffel?",
+  "Uit welke kleine dingen haal je geluk?",
+  "Van welk boek zou je graag een verfilming zien?",
+  "Van welk bordspel word jij het meest fanatiek?",
+  "Van welke blunder heb je nog steeds nachtmerries?",
+  "Van welke dag wil je een nationale feestdag maken?",
+  "Van welke docent heb je het meest geleerd?",
+  "Van welke gebeurtenis heb je het meest geleerd?",
+  "Van welke kleine dingen geniet jij het meest?",
+  "Van welke muziek word jij vrolijk?",
+  "Van welke onderwerpen word jij enthousiast?",
+  "Van wie had jij vroeger een poster boven je bed hangen?",
+  "Van wie kreeg je allemaal vlinders in je buik?",
+  "Van wie zou jij de gedachten willen lezen?",
+  "Volg je liever je hart of je hoofd?",
+  "Voor wie wil je meer de tijd nemen?",
+  "Voor wie zet je graag een kopje thee?",
+  "Voor wie zou je door het vuur gaan?",
+  "Voor wie zou jij een fanclub oprichten?",
+  "Waar ben je dankbaar voor in het leven?",
+  "Waar ben je het meest bang voor?",
+  "Waar ben je het meest trots op?",
+  "Waar besteed jij op een vrije dag de meeste tijd aan?",
+  "Waar denk je het meest aan op een dag?",
+  "Waar drink je het liefst een kopje thee?",
+  "Waar droom je vaak over?",
+  "Waar gaat jouw hart sneller van kloppen?",
+  "Waar ga jij heen om na te denken?",
+  "Waar geef jij te veel geld aan uit?",
+  "Waar heb je geen geduld voor?",
+  "Waar heb je het meest spijt van?",
+  "Waar heb je om gelachen vandaag?",
+  "Waar heb jij afgelopen week het meest van genoten?",
+  "Waar kan jij een ander goed bij helpen?",
+  "Waar kon je jou als kind voor wakker maken?",
+  "Waar kijk je als eerst naar bij een man of vrouw?",
+  "Waar kijk je naar uit aankomend weekend?",
+  "Waar kijk je naar uit deze week?",
+  "Waar kun je niet zonder leven?",
+  "Waar kun jij echt van genieten?",
+  "Waar kunnen collega's je blij mee maken?",
+  "Waar krijg jij de meeste energie van?",
+  "Waar maak jij graag een wandeling?",
+  "Waar praat je graag over?",
+  "Waar schaam je je het meest voor?",
+  "Waar stoor jij je snel aan?",
+  "Waar ter wereld voel jij je het meest comfortabel?",
+  "Waar voel je jezelf het meest op je gemak?",
+  "Waar voel jij je thuis?",
+  "Waar was je afgelopen week het meest dankbaar voor?",
+  "Waar werd je als kind blij van?",
+  "Waar wil je het liefst naartoe op reis?",
+  "Waar word je blij van?",
+  "Waar word jij enthousiast van?",
+  "Waar zie je jezelf over vijf jaar?",
+  "Waar zou je beroemd mee willen zijn?",
+  "Waar zou je heen gaan als je voor een dag kon vliegen als een vogel?",
+  "Waar zou je het liefst 10 minuten gratis winkelen?",
+  "Waar zou je morgen naar toe willen op vakantie?",
+  "Waar zou je nog graag een cursus in willen volgen?",
+  "Waar zou je nu het liefst willen zijn?",
+  "Waar zou je ooit nog willen overnachten?",
+  "Waar zou je vaker over willen praten?",
+  "Waar zou je veel beter in willen zijn?",
+  "Waar zou jij een boek over kunnen schrijven?",
+  "Waar zou jij een luchtballonvaart willen maken?",
+  "Waar zou jij graag een dag als vrijwilliger willen meehelpen?",
+  "Waar zou jij meer tijd aan willen besteden?",
+  "Waar zou jij vrijwilligerswerk willen doen?",
+  "Waarom is het fijn om jou als vriend(in) te hebben?",
+  "Waarvoor kwam je vroeger vaak in de problemen?",
+  "Wanneer ben je op je best?",
+  "Wanneer had jij voor het laatst iets te vieren?",
+  "Wanneer heb je voor het laatst een brief met de hand geschreven?",
+  "Wanneer heb je voor het laatst een dag niets gedaan?",
+  "Wanneer heb je voor het laatst een kaartje gestuurd?",
+  "Wanneer heb je voor het laatst gehuild van het lachen?",
+  "Wanneer heb je voor het laatst gehuild?",
+  "Wanneer heb je voor het laatst geweldig gegeten?",
+  "Wanneer heb je voor het laatst iemand geholpen?",
+  "Wanneer heb je voor het laatst iets nieuws gedaan?",
+  "Wanneer heb je voor het laatst iets spannends gedaan?",
+  "Wanneer heb je voor het laatst je grens verlegd?",
+  "Wanneer heb jij jezelf voor het laatst uitgedaagd?",
+  "Wanneer heb jij voor het laatst advies gegeven?",
+  "Wanneer komt het kind in jezelf weer boven?",
+  "Wanneer liet je voor het laatst merken dat je ergens dankbaar voor was?",
+  "Wanneer neem jij een momentje voor jezelf?",
+  "Wanneer voel jij je ergens thuis?",
+  "Wanneer voel jij je het energiekst?",
+  "Wanneer voel jij je het meest in balans?",
+  "Wanneer vind jij iemand oud?",
+  "Wanneer was je voor het laatst dapper?",
+  "Wanneer was je voor het laatst trots op een ander?",
+  "Wanneer was je voor het laatst trots op jezelf?",
+  "Was er een dag dat je gehuild hebt van geluk?",
+  "Wat at je het liefst toen je klein was?",
+  "Wat betekent gezelligheid voor jou?",
+  "Wat betekent ontspannen voor jou?",
+  "Wat bewonder jij aan jouw beste vriend of vriendin?",
+  "Wat brengt een lach op jouw gezicht?",
+  "Wat doe je het liefst op een regenachtige dag?",
+  "Wat doe je het liefst samen met iemand?",
+  "Wat doe je voordat je naar bed gaat om lekker te kunnen slapen?",
+  "Wat doe jij het liefst in het weekend?",
+  "Wat doe jij het liefst in je vrije tijd?",
+  "Wat doe jij om even tot rust te komen?",
+  "Wat doe jij om je hoofd leeg te maken?",
+  "Wat eet je het liefst bij het ontbijt?",
+  "Wat eet je het liefst op je boterham?",
+  "Wat geeft jou energie?",
+  "Wat had je nog graag op school willen leren?",
+  "Wat hebben jij en je beste vriend/vriendin gemeen?",
+  "Wat heb je altijd al willen leren?",
+  "Wat heb je altijd nog een keer tegen je ex willen zeggen?",
+  "Wat heb je nodig om gelukkig te zijn?",
+  "Wat heb je nodig voor een perfecte picknick?",
+  "Wat heb jij van je ouders overgenomen?",
+  "Wat inspireert jou?",
+  "Wat is de beste les die je hebt geleerd door het maken van een fout?",
+  "Wat is de grootste gok die je ooit hebt genomen?",
+  "Wat is de grootste prijs die je ooit gewonnen hebt?",
+  "Wat is de laatste droom die je nog weet?",
+  "Wat is de laatste film die je hebt gezien?",
+  "Wat is de leukste droom die je je kan herinneren?",
+  "Wat is de leukste vakantie die je ooit hebt gehad?",
+  "Wat is de meest vreemde plek waar je ooit geslapen hebt?",
+  "Wat is de mooiste herinnering uit jouw kindertijd?",
+  "Wat is de mooiste plek die je ooit hebt bezocht?",
+  "Wat is de perfecte snack voor bij de thee?",
+  "Wat is de raarste droom die je ooit hebt gehad?",
+  "Wat is een eigenschap die men nog niet van jou kent?",
+  "Wat is een gekke eigenschap van jou?",
+  "Wat is een goede eigenschap van jou?",
+  "Wat is het avontuurlijkste dat je ooit hebt gedaan?",
+  "Wat is het beste advies dat je hebt gekregen?",
+  "Wat is het eerste dat je doet zodra je opstaat?",
+  "Wat is het fijnste moment van de dag?",
+  "Wat is het gekste dat je graag zou willen doen?",
+  "Wat is het gekste dat je in het buitenland hebt meegemaakt?",
+  "Wat is het gekste dat je ooit hebt gegeten?",
+  "Wat is het gekste dat je ooit hebt gedaan?",
+  "Wat is het laatste compliment dat je hebt gegeven?",
+  "Wat is het laatste dat je doet voor je gaat slapen?",
+  "Wat is het laatste dat je gevierd hebt?",
+  "Wat is het leukste feestje waar je ooit bent geweest?",
+  "Wat is het leukste wat je geleerd hebt van je oma?",
+  "Wat is het liefste dat iemand ooit voor jou heeft gedaan?",
+  "Wat is het liefste dat je ooit voor iemand gedaan hebt?",
+  "Wat is het meest afgespeelde nummer in jouw playlist?",
+  "Wat is het meest bijzondere wat iemand ooit voor je deed?",
+  "Wat is het meest romantische dat je is overkomen?",
+  "Wat is het moeilijkste wat je ooit hebt gedaan?",
+  "Wat is het mooiste cadeau dat je ooit kreeg?",
+  "Wat is het mooiste compliment dat jij hebt ontvangen?",
+  "Wat is het mooiste plekje van Nederland?",
+  "Wat is het ondeugendste dat je vroeger hebt uitgespookt?",
+  "Wat is het slechtste cadeau dat je ooit gekregen hebt?",
+  "Wat is het spannendste dat je hebt meegemaakt?",
+  "Wat is het stomste dat je ooit hebt gedaan?",
+  "Wat is iets dat nog niemand over jou weet?",
+  "Wat is iets dat weinig mensen over jou weten?",
+  "Wat is je allereerste herinnering?",
+  "Wat is je droombaan?",
+  "Wat is je ergste nachtmerrie?",
+  "Wat is je favoriete feestdag?",
+  "Wat is je favoriete filmgenre?",
+  "Wat is je favoriete 'foute' liedje?",
+  "Wat is je favoriete gerecht?",
+  "Wat is je favoriete quote?",
+  "Wat is je favoriete snoep?",
+  "Wat is je favoriete spel?",
+  "Wat is je favoriete vervoersmiddel?",
+  "Wat is je favoriete vraag om te stellen?",
+  "Wat is je grootste droom?",
+  "Wat is je lievelingseten?",
+  "Wat is je meest favoriete kledingstuk?",
+  "Wat is je natuurlijke gave?",
+  "Wat is jouw avondritueel?",
+  "Wat is jouw doel in het leven?",
+  "Wat is jouw favoriete app?",
+  "Wat is jouw favoriete boek?",
+  "Wat is jouw favoriete dag van de week?",
+  "Wat is jouw favoriete drankje?",
+  "Wat is jouw favoriete genre boeken?",
+  "Wat is jouw favoriete herinnering?",
+  "Wat is jouw favoriete ijssmaak?",
+  "Wat is jouw favoriete lunchgerecht?",
+  "Wat is jouw favoriete manier om te ontspannen?",
+  "Wat is jouw favoriete me-time moment?",
+  "Wat is jouw favoriete moment van de dag?",
+  "Wat is jouw favoriete muziekinstrument?",
+  "Wat is jouw favoriete plek in huis?",
+  "Wat is jouw favoriete recept?",
+  "Wat is jouw favoriete seizoen?",
+  "Wat is jouw favoriete serie?",
+  "Wat is jouw favoriete sport?",
+  "Wat is jouw favoriete sprookje?",
+  "Wat is jouw favoriete theesmaak?",
+  "Wat is jouw favoriete vakantieland?",
+  "Wat is jouw favoriete verkleedoutfit?",
+  "Wat is jouw gekste bijnaam?",
+  "Wat is jouw geluksgetal en waarom?",
+  "Wat is jouw grootste prestatie tot nu toe?",
+  "Wat is jouw grootste wens?",
+  "Wat is jouw lievelingsbloem?",
+  "Wat is jouw kostbaarste bezit?",
+  "Wat is jouw levensmotto?",
+  "Wat is jouw leukste eigenschap?",
+  "Wat is jouw lievelingsplek?",
+  "Wat is jouw meest dierbare plekje op aarde?",
+  "Wat is jouw mooiste jeugdherinnering?",
+  "Wat is jouw mooiste herinnering met jouw familie?",
+  "Wat is jouw mooiste herinnering van het afgelopen jaar?",
+  "Wat is jouw ochtendritueel?",
+  "Wat is jouw sterkste zintuig?",
+  "Wat is jouw talent?",
+  "Wat is jouw ultieme geluksmoment?",
+  "Wat is voor jou belangrijk in een relatie?",
+  "Wat is voor jou de perfecte avond uit?",
+  "Wat is voor jou het beste gevoel ter wereld?",
+  "Wat is voor jou het woord van het jaar?",
+  "Wat is/was je lievelingsvak op school?",
+  "Wat kan jou echt ontroeren?",
+  "Wat kocht je van je eerste salaris?",
+  "Wat kun je makkelijk uren achter elkaar doen?",
+  "Wat is liefde voor jou?",
+  "Wat maakt de band met jouw beste vriend(in) bijzonder?",
+  "Wat maakt jou bijzonder?",
+  "Wat maakt jou blij vandaag?",
+  "Wat maakt jou uniek?",
+  "Wat maakt jouw huis een thuis?",
+  "Wat mis je aan kind zijn?",
+  "Wat moet blijven zoals het nu is?",
+  "Wat motiveert jou?",
+  "Wat staat er altijd bij jou in de koelkast?",
+  "Wat staat er nog op je bucketlist?",
+  "Wat staat er op je verlanglijstje?",
+  "Wat stel je altijd uit?",
+  "Wat tovert een glimlach op jouw gezicht?",
+  "Wat vergeet je nooit als je het huis verlaat?",
+  "Wat vind je het leukste klusje in huis?",
+  "Wat vind je het leukst om te doen in de zomer?",
+  "Wat vind je het mooiste aan jezelf?",
+  "Wat vind je leuk om van anderen te horen?",
+  "Wat vind jij de mooiste taal op de wereld?",
+  "Wat vind jij een mooi gebaar?",
+  "Wat vind jij het allerbelangrijkste in het leven?",
+  "Wat vind jij je beste eigenschap?",
+  "Wat voor muziek heb je het laatst geluisterd?",
+  "Wat voor werk zou je ooit nog willen doen?",
+  "Wat waardeer je in anderen?",
+  "Wat waardeer jij het meest in vriendschap?",
+  "Wat was als kind jouw droombaan?",
+  "Wat was de mooiste dag van je leven?",
+  "Wat was het eerste waar je vanochtend aan dacht?",
+  "Wat was je grootste blunder?",
+  "Wat was je laatste overwinning?",
+  "Wat was jouw eerste baan(tje)?",
+  "Wat was jouw favoriete televisieprogramma toen je klein was?",
+  "Wat was jouw mooiste avontuur?",
+  "Wat was jouw mooiste reis?",
+  "Wat was voor jou een levensveranderende ervaring?",
+  "Wat was vroeger jouw favoriete liedje?",
+  "Wat wil je deze week bereiken?",
+  "Wat wil je vandaag anders doen dan gisteren?",
+  "Wat wil je voor je volgende verjaardag bereikt hebben?",
+  "Wat wilde je worden toen je klein was?",
+  "Wat zijn de leukste dingen in het leven?",
+  "Wat zijn drie positieve dingen aan deze dag?",
+  "Wat zijn jouw verborgen talenten?",
+  "Wat zorgde vandaag voor een glimlach op je gezicht?",
+  "Wat zou er in het eerste hoofdstuk van jouw biografie staan?",
+  "Wat zou je absoluut niet kunnen missen?",
+  "Wat zou je als eerste doen wanneer je de loterij zou winnen?",
+  "Wat zou je gaan doen als je een carrièreswitch kon maken?",
+  "Wat zou je doen als je één dag 1.000 euro mocht opmaken?",
+  "Wat zou je doen als je een dag koning(in) was?",
+  "Wat zou je doen als je geen angsten had?",
+  "Wat zou je doen als je nooit meer hoefde te werken?",
+  "Wat zou je doen als je onzichtbaar was?",
+  "Wat zou je doen als je voor één dag van geslacht mag wisselen?",
+  "Wat zou je doen als je voor één dag weer kind was?",
+  "Wat zou je doen als je wist dat je niet kon falen?",
+  "Wat zou je doen met 10 miljoen euro?",
+  "Wat zou je doen met een extra dag in de week?",
+  "Wat zou je doen wanneer je wakker werd en alles mogelijk zou zijn?",
+  "Wat zou je graag nog eens willen doen?",
+  "Wat zou je kopen van je laatste vijf euro?",
+  "Wat zou je laatste avondmaal zijn?",
+  "Wat zou je nog eens willen leren?",
+  "Wat zou je nog heel graag aan iemand willen vragen?",
+  "Wat zou je op een dag willen doen dat je nog nooit hebt gedaan?",
+  "Wat zou je uitvinden als alles te realiseren was?",
+  "Wat zou je wensen als je drie wensen had?",
+  "Wat zou je willen veranderen in de wereld?",
+  "Wat zou jij het liefst tegen je jongere zelf zeggen?",
+  "Wat zou jij trakteren als je vandaag jarig was?",
+  "Wat zou jij veranderen als je minister-president was?",
+  "Welk advies zou jij je jongere zelf geven?",
+  "Welk bekend persoon zou jij een dag willen zijn?",
+  "Welk beroep zou je voor een dag willen uitoefenen?",
+  "Welk beroep zou je weleens voor een week willen proberen?",
+  "Welk beroep zou je kiezen als je alles zou kunnen worden?",
+  "Welk bijgeloof heb je?",
+  "Welk boek heb je het laatst gelezen?",
+  "Welk boek heeft indruk op jou gemaakt?",
+  "Welk boek wil je nogmaals lezen?",
+  "Welk compliment mag je jezelf geven vandaag?",
+  "Welk detail van vandaag wil je onthouden?",
+  "Welk dier geeft jouw persoonlijkheid het best weer?",
+  "Welk dier zou je voor een dag willen zijn?",
+  "Welk doel wil jij dit jaar bereiken?",
+  "Welk fictief karakter zou jij tot leven willen brengen?",
+  "Welk geheim weet bijna niemand van jou?",
+  "Welk gerecht doet je denken aan vroeger?",
+  "Welk gerecht kan jij het beste koken?",
+  "Welk gesprek zal je nooit vergeten?",
+  "Welk goede voornemen heb jij ieder jaar opnieuw?",
+  "Welk kattenkwaad heb jij vroeger uitgehaald?",
+  "Welk kledingstuk mag niet ontbreken in jouw kledingkast?",
+  "Welk levensjaar zou je nog een keer willen herbeleven?",
+  "Welk lied beschrijft jouw leven op dit moment?",
+  "Welk liedje blijft altijd in jouw hoofd hangen?",
+  "Welk liedje herinnert je aan jouw kindertijd?",
+  "Welk liedje neem je mee naar een onbewoond eiland?",
+  "Welk liedje roept speciale herinneringen op?",
+  "Welk liedje zou je zingen als je meedeed aan een zangwedstrijd?",
+  "Welk museum wil jij nog eens bezoeken?",
+  "Welk muziekgenre luister jij graag?",
+  "Welk muziekinstrument zou je willen leren bespelen?",
+  "Welk nummer zou je zingen tijdens een karaoke-avond?",
+  "Welk positief nieuws van deze week is je bijgebleven?",
+  "Welk sprookje zou je zelf weleens willen beleven?",
+  "Welk stripfiguur lijkt op jou?",
+  "Welk talent zou je willen hebben?",
+  "Welk thema zou jij jouw themafeest geven?",
+  "Welk tv-programma van vroeger zou je graag weer op tv zien?",
+  "Welk vak ontbreekt er volgens jou op school?",
+  "Welk vak zou je willen geven als je leraar was?",
+  "Welk verhaal vertellen je vrienden altijd over jou?",
+  "Welk verrassend inzicht heb jij laatst opgedaan?",
+  "Welk wereldrecord zou je willen verbreken?",
+  "Welke 3 theesmaken drink jij het liefst?",
+  "Welke 3 voorwerpen zou jij meenemen naar een onbewoond eiland?",
+  "Welke 3 woorden omschrijven jou het best?",
+  "Welke acteur zou de hoofdrol spelen in de film over jouw leven?",
+  "Welke alledaagse dingen maken jou gelukkig?",
+  "Welke angst heb jij overwonnen?",
+  "Welke award zou je graag willen winnen?",
+  "Welke beroemdheid heb je ooit ontmoet?",
+  "Welke bordspellen staan er in jouw top drie?",
+  "Welke bijnaam zou jij jezelf geven?",
+  "Welke culturele gewoonte vind jij mooi?",
+  "Welke cursus zou je graag eens willen volgen?",
+  "Welke dag zou je nog een keer willen beleven?",
+  "Welke dingen geven je houvast in het leven?",
+  "Welke droom is al uitgekomen?",
+  "Welke droom wil je dit jaar waarmaken?",
+  "Welke eigenschap vind jij het belangrijkst bij een vriend(in)?",
+  "Welke film heeft echt indruk op jou gemaakt?",
+  "Welke film heb je al meer dan 10 keer gezien?",
+  "Welke gave zou je willen hebben?",
+  "Welke gebeurtenis heeft je gemaakt tot wie je nu bent?",
+  "Welke geur doet jou aan vakantie denken?",
+  "Welke geur roept bij jou een herinnering uit je jeugd op?",
+  "Welke gewoonte wil je graag afleren?",
+  "Welke goede gewoonte wil jij aanleren?",
+  "Welke herinnering tovert een lach op je gezicht?",
+  "Welke herinnering zou je nog eens willen herbeleven?",
+  "Welke historische gebeurtenis had jij willen bijwonen?",
+  "Welke hobby van vroeger zou je weer willen oppakken?",
+  "Welke kans wil je nog eens grijpen?",
+  "Welke karaktereigenschap zou je graag willen hebben?",
+  "Welke keuken vind jij het lekkerst?",
+  "Welke kleur doet jou denken aan gelukkig zijn?",
+  "Welke landen heb je allemaal bezocht?",
+  "Welke leeftijd zou je het liefst voor altijd hebben?",
+  "Welke levensles wil je doorgeven aan anderen?",
+  "Welke muziek raakt jou?",
+  "Welke naam vind jij echt mooi?",
+  "Welke periode uit de geschiedenis vind jij het interessantst?",
+  "Welke planeet zou jij het liefst bezoeken?",
+  "Welke plek ter wereld wil jij naartoe?",
+  "Welke plek zou je kiezen als permanente vakantiebestemming?",
+  "Welke reisherinnering bezorgt je nog steeds een glimlach?",
+  "Welke sport zou je graag willen proberen?",
+  "Welke spullen raak jij vaak kwijt?",
+  "Welke stad in Nederland wil je nog graag een keer bezoeken?",
+  "Welke stap hoop jij in de toekomst nog te zetten?",
+  "Welke superkracht zou je het liefst willen hebben?",
+  "Welke taal zou je graag willen spreken?",
+  "Welke titel zou jij het boek over jouw leven geven?",
+  "Welke tradities heb je binnen jouw familie?",
+  "Welke uitdaging zou je nog eens willen aangaan?",
+  "Welke uitvinding mis jij nog in de wereld?",
+  "Welke vakantie zou je willen herbeleven?",
+  "Welke vier artiesten zouden de perfecte muziekgroep vormen?",
+  "Welke voorwerpen uit je huis zou je meenemen bij een brand?",
+  "Welke vraag zou je op een theelabel zetten?",
+  "Welke zonsondergang is jou bijgebleven?",
+  "Wie aan deze tafel heeft het meeste geluk?",
+  "Wie bel je om je hart te luchten?",
+  "Wie biedt jou altijd een luisterend oor?",
+  "Wie fleurt jou op op een sombere dag?",
+  "Wie heb je het laatst gebeld?",
+  "Wie heeft afgelopen jaar veel indruk op je gemaakt?",
+  "Wie heeft de meeste invloed op jouw leven gehad?",
+  "Wie heeft jou veel geleerd?",
+  "Wie hoop jij ooit nog tegen te komen?",
+  "Wie in jouw omgeving straalt altijd?",
+  "Wie inspireert jou?",
+  "Wie inspireert jou om een beter mens te zijn?",
+  "Wie is de leukste persoon die je afgelopen jaar hebt leren kennen?",
+  "Wie is een voorbeeldfiguur voor jou?",
+  "Wie is jouw grootste fan?",
+  "Wie is jouw grootste voorbeeld?",
+  "Wie is jouw persoonlijke held?",
+  "Wie is op dit moment jouw lievelingsartiest?",
+  "Wie kent jou het beste?",
+  "Wie maakt je altijd aan het lachen?",
+  "Wie maakt jou blij?",
+  "Wie moet je weer eens opzoeken?",
+  "Wie neem je mee naar een onbewoond eiland?",
+  "Wie staat er altijd voor jou klaar?",
+  "Wie uit het verleden zou je willen ontmoeten?",
+  "Wie vertrouw jij het meest?",
+  "Wie was jouw eerste liefde?",
+  "Wie was jouw lievelingsleraar op school?",
+  "Wie weet jou altijd op te fleuren?",
+  "Wie wil je beter leren kennen?",
+  "Wie zou je graag een knuffel willen geven?",
+  "Wie zou je graag persoonlijk willen bedanken?",
+  "Wie zou je meenemen naar de maan?",
+  "Wie zou je meer complimentjes moeten geven?",
+  "Wie zou je vandaag kunnen helpen?",
+  "Wie zou je voor één dag willen zijn?",
+  "Wil je blijven wonen waar je nu woont?",
+  "Woon je liever in een stad of in een dorp?",
+  "Zing je wel eens onder de douche?",
+  "Zonder welke drie dingen kun je niet leven?",
+  "Zou je in het buitenland willen wonen?",
+  "Zou je liever aan de zee wonen of in de bergen?",
+  "Zou je liever al je eten rauw eten of al je eten frituren?",
+  "Zou je liever de loterij winnen of de perfecte baan vinden?",
+  "Zou je liever gedachten kunnen lezen of onzichtbaar willen zijn?",
+  "Zou je liever goed kunnen zingen of goed kunnen dansen?",
+  "Zou je liever heel muzikaal zijn of goed kunnen schrijven?",
+  "Zou je liever het verleden veranderen of de toekomst zien?",
+  "Zou je liever kunnen vliegen of door de tijd kunnen reizen?",
+  "Zou je liever rijk of liever beroemd willen zijn?",
+  "Zou je liever voor een dag koning zijn of voor een dag weer kind?",
+  "Zou je naar de ruimte reizen als je de kans kreeg?",
+  "Zou je op Mars willen wonen als dat kon?",
+  "Zou je tien jaar korter willen leven in ruil om rijk te zijn?",
+  "Zou je voor één dag het andere geslacht willen zijn?"
+];
 
-        // --- MAGISCHE STERREN GENERATOR ---
-        // We maken nu 100 sterren voor meer effect
-        for (let i = 0; i < 100; i++) {
-            const star = document.createElement('div');
-            star.className = 'star';
-            
-            // Varieer de grootte van de sterren
-            const size = Math.random() * 4 + 2 + 'px'; // Tussen 2px en 6px
-            star.style.width = size;
-            star.style.height = size;
-            
-            star.style.top = Math.random() * 100 + '%';
-            star.style.left = Math.random() * 100 + '%';
-            
-            // Willekeurige duur en vertraging voor een natuurlijk, chaotisch effect
-            const duration = Math.random() * 3 + 1.5 + 's'; // Tussen 1.5s en 4.5s
-            const delay = Math.random() * 3 + 's';
-            
-            star.style.animationDuration = duration;
-            star.style.animationDelay = delay;
-            
-            starsContainer.appendChild(star);
-        }
+/* ── Shuffle ─────────────────────────────────────────────────────── */
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
-        function getRandomQuestion() {
-            const randomIndex = Math.floor(Math.random() * questions.length);
-            return questions[randomIndex];
-        }
+let deck = shuffle([...QUESTIONS]);
+let pos  = 0;
 
-        card.addEventListener('click', () => {
-            if (!isFlipped) {
-                // Draai om naar vraag (eerst de tekst updaten)
-                questionText.innerText = getRandomQuestion();
-                card.classList.add('is-flipped');
-                isFlipped = true;
-            } else {
-                // Draai terug naar de magische sterren
-                card.classList.remove('is-flipped');
-                isFlipped = false;
-            }
-        });
-    </script>
+function nextQuestion() {
+  if (pos >= deck.length) { deck = shuffle([...QUESTIONS]); pos = 0; }
+  return deck[pos++];
+}
+
+/* ── Achtergrond sterren ─────────────────────────────────────────── */
+const bg = document.getElementById('bg');
+for (let i = 0; i < 180; i++) {
+  const s = document.createElement('div');
+  s.className = 'bs';
+  const sz = (Math.random() * 1.8 + 0.3).toFixed(1);
+  s.style.cssText =
+    `width:${sz}px;height:${sz}px;` +
+    `top:${(Math.random()*100).toFixed(2)}%;` +
+    `left:${(Math.random()*100).toFixed(2)}%;` +
+    `--d:${(Math.random()*3.5+2).toFixed(1)}s;` +
+    `--dl:-${(Math.random()*6).toFixed(1)}s;`;
+  bg.appendChild(s);
+}
+
+/* ── Kaart-sterren ───────────────────────────────────────────────── */
+const cs = document.getElementById('card-stars');
+
+// Kleine ronde stippen
+for (let i = 0; i < 70; i++) {
+  const s = document.createElement('div');
+  s.className = 'cs';
+  const sz = (Math.random() * 2.4 + 0.6).toFixed(1);
+  s.style.cssText =
+    `width:${sz}px;height:${sz}px;` +
+    `top:${(Math.random()*100).toFixed(1)}%;` +
+    `left:${(Math.random()*100).toFixed(1)}%;` +
+    `--d:${(Math.random()*1.8+1).toFixed(1)}s;` +
+    `--dl:-${(Math.random()*4).toFixed(1)}s;`;
+  cs.appendChild(s);
+}
+
+// Grote fonkelsterren ✦
+const chars = ['✦','✦','✦','✧','⋆'];
+for (let i = 0; i < 22; i++) {
+  const s = document.createElement('span');
+  s.className = 'sp';
+  const sz = (Math.random() * 10 + 6).toFixed(0);
+  s.textContent = chars[Math.floor(Math.random() * chars.length)];
+  s.style.cssText =
+    `font-size:${sz}px;` +
+    `top:${(Math.random()*88+4).toFixed(1)}%;` +
+    `left:${(Math.random()*88+4).toFixed(1)}%;` +
+    `--d:${(Math.random()*2.2+1.6).toFixed(1)}s;` +
+    `--dl:-${(Math.random()*5).toFixed(1)}s;`;
+  cs.appendChild(s);
+}
+
+/* ── Klikgedrag ─────────────────────────────────────────────────── */
+const card    = document.getElementById('card');
+const qEl     = document.getElementById('question');
+const hintEl  = document.getElementById('hint');
+let flipped   = false;
+
+card.addEventListener('click', () => {
+  if (!flipped) {
+    qEl.textContent = nextQuestion();
+    hintEl.textContent = 'Klik nogmaals om de kaart terug te draaien';
+  } else {
+    hintEl.textContent = 'Klik op de kaart voor een nieuwe vraag';
+  }
+  flipped = !flipped;
+  card.classList.toggle('flipped', flipped);
+});
+</script>
 </body>
 </html>
